@@ -53,6 +53,9 @@ Trader.prototype.getPortfolio = function(callback) {
 
 
 Trader.getCapabilities = function () {
+
+    // TODO: Add currency/asset pairs
+
     return {
         name: 'HitBTC',
         slug: 'hitbtc',
