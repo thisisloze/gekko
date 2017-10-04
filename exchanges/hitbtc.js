@@ -15,7 +15,7 @@ var Trader = function(config) {
     }
     this.name = 'HitBTC';
 
-    this.hitbtc = new HitBTC({this.key, this.secret, isDemo: false});
+    this.hitbtc = new HitBTC({key: this.key, secret: this.secret, isDemo: false});
 }
 
 // If an error is received, method waits for 10 seconds before trying again
@@ -42,14 +42,30 @@ Trader.prototype.retry = function(method, args) {
 Trader.prototype.getPortfolio = function(callback) {
     var args = _.toArray(arguments);
 
-    const { getMyBalance } = this.hitbtc;
-    getMyBalance()
-        .then(
+    this.hitbtc.getMyBalance()
+        .then(function(balance) {
             var portfolio = [];
-            ({ balance }) => {
-                console.log(`My balance is ${balance}`);
-            }
+            console.log(`My balance is ${balance}`);
 
             callback(err, portfolio);
-        )
+        })
 }
+
+
+Trader.getCapabilities = function () {
+    return {
+        name: 'HitBTC',
+        slug: 'hitbtc',
+        currencies: [],
+        assets: [],
+        maxTradesAge: 60,
+        maxHistoryFetch: null,
+        markets: [],
+        requires: ['key', 'secret'],
+        fetchTimeSpan: 60,
+        tid: 'tid',
+        tradable: true
+    };
+}
+
+module.exports = Trader;
