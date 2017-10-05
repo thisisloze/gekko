@@ -1,12 +1,13 @@
-var HitBTC = require('hitbtc-api')
-var _ = require('lodash')
-var moment = require('moment')
-var log = require('../core/log')
-var util = require('../core/util')
+var HitBTC = require('hitbtc-js');
+var _ = require('lodash');
+var moment = require('moment');
+var log = require('../core/log');
+var util = require('../core/util');
 
 var Trader = function(config) {
     _.bindAll(this);
     if (_.isObject(config)) {
+        console.log("config: ", config);
         this.key = config.key;
         this.secret = config.secret;
         this.asset = config.asset.toLowerCase();
@@ -15,7 +16,8 @@ var Trader = function(config) {
     }
     this.name = 'HitBTC';
 
-    this.hitbtc = new HitBTC({key: this.key, secret: this.secret, isDemo: false});
+    this.hitbtc = new HitBTC(this.key, this.secret, 'live');
+    console.log("hitbtc: ", this.hitbtc);
 }
 
 // If an error is received, method waits for 10 seconds before trying again
@@ -42,19 +44,56 @@ Trader.prototype.retry = function(method, args) {
 Trader.prototype.getPortfolio = function(callback) {
     var args = _.toArray(arguments);
 
-    this.hitbtc.getMyBalance()
-        .then(function(balance) {
-            var portfolio = [];
-            console.log(`My balance is ${balance}`);
+    // this.hitbtc.getMyBalance()
+    //     .then(function(balance) {
+    //         var portfolio = [];
+    //         console.log(`My balance is ${balance}`);
+    //
+    //         callback(err, portfolio);
+    //     })
+}
 
-            callback(err, portfolio);
-        })
+Trader.prototype.getTrades = function(since, callback, descending) {
+
+    var firstFetch = !!since;
+
+    var args = _.toArray(arguments);
+    var process = function(err, result) {
+        if (err) {
+            return this.retry(this.getTrades, args);
+        }
+
+        if (firstFetch && _.size(result) === 1000)
+            util.die(
+                [
+                    'HitBTC did not provide enough data.'
+                ].join('\n\n');
+            );
+
+        result = _.map(result, function(trade) {
+            return {
+                tid: trade.tradeID,
+                amount: +trade.amount,
+                date: moment.utc(trade.date).unix(),
+                price: +trade.rate
+            };
+        });
+
+        callback(null, result.reverse());
+    };
+
+    var params = {
+        currencyPair: joinCurrencies(this.currency, this.asset)
+    }
+
+    if (since)
+        params.start = since.unix();
+
+    this.hitbtc
 }
 
 
 Trader.getCapabilities = function () {
-
-    // TODO: Add currency/asset pairs
 
     return {
         name: 'HitBTC',

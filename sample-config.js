@@ -16,10 +16,18 @@ config.debug = true; // for additional logging / debugging
 config.watch = {
 
   // see https://gekko.wizb.it/docs/introduction/supported_exchanges.html
-  exchange: 'poloniex',
-  currency: 'USDT',
-  asset: 'BTC',
-
+  {
+      exchange: 'poloniex',
+      currency: 'USDT',
+      asset: 'BTC'
+  },
+  {
+      exchange: 'hitbtc',
+      currency: 'EUR',
+      asset: 'BTC',
+      key: 'f93f9c1181241ebd7e300b6232d33281',
+      secret: 'aeba108a1c4cb5019da28b2299291d4e'
+  }
   // You can set your own tickrate (refresh rate).
   // If you don't set it, the defaults are 2 sec for
   // okcoin and 20 sec for all other exchanges.

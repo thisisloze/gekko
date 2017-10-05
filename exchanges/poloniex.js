@@ -12,6 +12,7 @@ function joinCurrencies(currencyA, currencyB){
 var Trader = function(config) {
   _.bindAll(this);
   if(_.isObject(config)) {
+    console.log("config: ", config);
     this.key = config.key;
     this.secret = config.secret;
     this.currency = config.currency;
