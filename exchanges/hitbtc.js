@@ -68,7 +68,7 @@ Trader.prototype.getTrades = function(since, callback, descending) {
         });
 
         console.log("trades: ", trades.reverse());
-        callback(null, descending ? trades : trades.reverse());
+        callback(null, trades);
     }.bind(this);
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 300, format_item: 'object'})
