@@ -55,6 +55,7 @@ Trader.prototype.getPortfolio = function(callback) {
 Trader.prototype.getTrades = function(since, callback, descending) {
     var args = _.toArray(arguments);
 
+    console.log("pair: ", this.pair);
     var symbol = this.pair;
 
     var process = function(data) {
@@ -67,11 +68,11 @@ Trader.prototype.getTrades = function(since, callback, descending) {
             }
         });
 
-        console.log("trades: ", trades.reverse());
+        // console.log("trades: ", trades.reverse());
         callback(null, trades);
     }.bind(this);
 
-    this.hitbtc.getRecentTrades(symbol, {max_results: 300, format_item: 'object'})
+    this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
         .then(process);
 }
 
