@@ -9,13 +9,12 @@ var Trader = function(config) {
     if (_.isObject(config)) {
         this.key = config.key;
         this.secret = config.secret;
-        this.asset = config.asset.toLowerCase();
-        this.currency = config.currency.toLowerCase();
-        this.market = this.asset + this.currency;
     }
     this.name = 'HitBTC';
-
-    this.hitbtc = new HitBTC({key: this.key, secret: this.secret, isDemo: false});
+    this.asset = config.asset.toLowerCase();
+    this.currency = config.currency.toLowerCase();
+    this.pair = this.asset + this.currency;
+    this.hitbtc = new HitBTC.default(this.key, this.secret, {isDemo: false});
 }
 
 // If an error is received, method waits for 10 seconds before trying again
@@ -48,9 +47,33 @@ Trader.prototype.getPortfolio = function(callback) {
             console.log(`My balance is ${balance}`);
 
             callback(err, portfolio);
-        })
+        });
 }
 
+
+
+Trader.prototype.getTrades = function(since, callback, descending) {
+    var args = _.toArray(arguments);
+
+    var symbol = this.pair;
+
+    var process = function(data) {
+        var trades = _.map(data.trades, function(trade) {
+            return {
+                tid: trade.tid,
+                date: moment.utc(trade.date).unix(),
+                price: +trade.price,
+                amount: +trade.amount
+            }
+        });
+
+        console.log("trades: ", trades.reverse());
+        callback(null, descending ? trades : trades.reverse());
+    }.bind(this);
+
+    this.hitbtc.getRecentTrades(symbol, {max_results: 300, format_item: 'object'})
+        .then(process);
+}
 
 Trader.getCapabilities = function () {
 
