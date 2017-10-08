@@ -1,4 +1,4 @@
-var HitBTC = require('hitbtc-js');
+var HitBTC = require('hitbtc-api');
 var _ = require('lodash');
 var moment = require('moment');
 var log = require('../core/log');
@@ -54,10 +54,11 @@ Trader.prototype.getPortfolio = function(callback) {
 Trader.prototype.getTrades = function(since, callback, descending) {
     var args = _.toArray(arguments);
 
-    console.log("pair: ", this.pair);
     var symbol = this.pair;
 
     var process = function(data) {
+
+        // console.log("data: ", data);
         var trades = _.map(data.trades, function(trade) {
             return {
                 tid: trade.tid,
@@ -67,12 +68,15 @@ Trader.prototype.getTrades = function(since, callback, descending) {
             }
         });
 
-        // console.log("trades: ", trades.reverse());
         callback(null, trades);
     }.bind(this);
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
-        .then(process);
+        .then(process)
+        .catch(function(err) {
+            if(err)
+              return this.retry(this.getTrades, args);
+        });
 }
 
 Trader.getCapabilities = function () {
