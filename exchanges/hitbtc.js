@@ -10,14 +10,12 @@ var Trader = function(config) {
         console.log("config: ", config);
         this.key = config.key;
         this.secret = config.secret;
-        this.asset = config.asset.toLowerCase();
-        this.currency = config.currency.toLowerCase();
-        this.market = this.asset + this.currency;
     }
     this.name = 'HitBTC';
-
-    this.hitbtc = new HitBTC(this.key, this.secret, 'live');
-    console.log("hitbtc: ", this.hitbtc);
+    this.asset = config.asset.toLowerCase();
+    this.currency = config.currency.toLowerCase();
+    this.pair = this.asset + this.currency;
+    this.hitbtc = new HitBTC.default(this.key, this.secret, {isDemo: false});
 }
 
 // If an error is received, method waits for 10 seconds before trying again
@@ -54,44 +52,28 @@ Trader.prototype.getPortfolio = function(callback) {
 }
 
 Trader.prototype.getTrades = function(since, callback, descending) {
-
-    var firstFetch = !!since;
-
     var args = _.toArray(arguments);
-    var process = function(err, result) {
-        if (err) {
-            return this.retry(this.getTrades, args);
-        }
 
-        if (firstFetch && _.size(result) === 1000)
-            util.die(
-                [
-                    'HitBTC did not provide enough data.'
-                ].join('\n\n');
-            );
+    console.log("pair: ", this.pair);
+    var symbol = this.pair;
 
-        result = _.map(result, function(trade) {
+    var process = function(data) {
+        var trades = _.map(data.trades, function(trade) {
             return {
-                tid: trade.tradeID,
-                amount: +trade.amount,
+                tid: trade.tid,
                 date: moment.utc(trade.date).unix(),
-                price: +trade.rate
-            };
+                price: +trade.price,
+                amount: +trade.amount
+            }
         });
 
-        callback(null, result.reverse());
-    };
+        // console.log("trades: ", trades.reverse());
+        callback(null, trades);
+    }.bind(this);
 
-    var params = {
-        currencyPair: joinCurrencies(this.currency, this.asset)
-    }
-
-    if (since)
-        params.start = since.unix();
-
-    this.hitbtc
+    this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
+        .then(process);
 }
-
 
 Trader.getCapabilities = function () {
 
