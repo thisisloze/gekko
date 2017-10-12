@@ -49,6 +49,8 @@ Checker.prototype.cantMonitor = function(conf) {
     return 'Gekko only supports the assets [ ' + exchange.assets.join(', ') + ' ]  at ' + name + ' (not ' + conf.asset + ')';
 
   var pair = _.find(exchange.markets, function(p) {
+    console.log("p: ", p);
+    console.log("config: ", conf);
     return p.pair[0] === conf.currency && p.pair[1] === conf.asset;
   });
 

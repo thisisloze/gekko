@@ -10,10 +10,10 @@ var Trader = function(config) {
         console.log("config: ", config);
         this.key = config.key;
         this.secret = config.secret;
+        this.asset = config.asset.toLowerCase();
+        this.currency = config.currency.toLowerCase();
     }
     this.name = 'HitBTC';
-    this.asset = config.asset.toLowerCase();
-    this.currency = config.currency.toLowerCase();
     this.pair = this.asset + this.currency;
     this.hitbtc = new HitBTC.default(this.key, this.secret, {isDemo: false});
 }
@@ -44,19 +44,24 @@ Trader.prototype.getPortfolio = function(callback) {
 
     var set = function(balance) {
         console.log("getPortfolio balance: ", balance);
+        var portfolio = [];
+
+        callback(null, portfolio);
     }.bind(this);
 
     this.hitbtc.getMyBalance()
         .then(set);
 }
 
-// Trader.portfolio.getTicker = function(callback) {
-//     this.hitbtc.getTicker(this.pair)
-//         .then(function(data) {
-//             console.log("getTicker data: ", data);
-//             callback(null, data);
-//         });
-// }
+Trader.prototype.getTicker = function(callback) {
+
+    console.log("ticker pair: ", this.pair);
+    this.hitbtc.getTicker(this.pair)
+        .then(function(data) {
+            console.log("getTicker data: ", data);
+            callback(null, data);
+        });
+}
 
 Trader.prototype.getTrades = function(since, callback, descending) {
     var args = _.toArray(arguments);
@@ -198,7 +203,7 @@ Trader.getCapabilities = function () {
 
             { pair: ['EUR', 'LSK'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['BTC', 'LSK'], minimalOrder: { amount: 0.01, unit: 'currency' } },
-,
+            
             { pair: ['BTC', 'TIME'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['ETH', 'TIME'], minimalOrder: { amount: 0.01, unit: 'currency' } },
 
