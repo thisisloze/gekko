@@ -27,6 +27,11 @@ config.watch = {
       asset: 'BTC',
       key: 'f93f9c1181241ebd7e300b6232d33281',
       secret: 'aeba108a1c4cb5019da28b2299291d4e'
+  },
+  {
+      exchange: 'bitfinex',
+      currency: 'USD',
+      asset: 'BTC'
   }
   // You can set your own tickrate (refresh rate).
   // If you don't set it, the defaults are 2 sec for
