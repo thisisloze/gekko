@@ -47,7 +47,6 @@ Trader.prototype.getPortfolio = function(callback) {
 
             portfolio.push({name: asset, amount: parseFloat((amount.cash))});
         });
-        console.log("portfolio: ", portfolio);
 
         callback(null, portfolio);
     }.bind(this);
@@ -141,8 +140,7 @@ Trader.prototype.getTrades = function(since, callback, descending) {
             }
         });
 
-        // console.log("getTrades trades: ", trades);
-        callback(null, trades);
+        callback(null, trades.reverse());
     }.bind(this);
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
@@ -163,8 +161,6 @@ Trader.getCapabilities = function () {
         assets: [
             'PPT', 'DGD', 'SBD', 'AMB', 'UET', 'BET', 'BMC', 'AMP', 'PQT', 'REP', 'ETH', 'ICX', 'RVT', 'GNO', 'BAS', 'MTH', 'CRS', 'DASH', 'ZEC', 'HPC', 'TIME', 'WINGS', 'YOYOW', 'ADX', 'ICN', 'AIR', 'EBET', 'MNE', 'SC', 'AVT', 'XTZ', 'WEALTH', 'XAUR', 'OPT', 'GUP', 'PLBT', '8BT', 'OAX', 'STX', 'NEO', 'NET', 'NXT', 'ARDR', 'PLU', 'DOGE', 'BCC', 'PTOY', 'HVN', 'CND', 'PPC', 'MCAP', 'FUEL', 'GAME', 'NTO', 'CFI', 'QCN', 'LUN', 'EDG', 'AE', 'BOS', 'PBKX', 'ICO', 'IXT', 'NXC', 'MYB', 'DCT', 'ZRX', 'STEEM', 'XEM', 'SWT', 'SUR', 'ANT', 'TKR', 'FCN', 'IML', 'MAID', 'WMGO', 'DENT', 'MSP', 'RLC', 'DSH', 'IGNIS', 'WTT', 'EMC', 'OMG', 'XRP', 'BUS', '1ST', 'PING', 'EOS', 'TNT', 'SNC', 'PIX', 'VERI', 'KC', 'QAU', 'TIX', 'LSK', 'CVC', 'XDNCO', 'PLR', 'LAT', 'FUN', 'XVG', 'MIPS', 'TRST', 'BQX', 'EMGO', 'QTUM', 'SAN', 'MANA', 'PAY', 'PRG', 'MPK', 'IND', 'COSS', 'SKIN', 'XMR', 'DDF', 'ICOS', 'EVX', 'AEON', 'NDC', 'BNT', 'ECAT', 'SNGLS', 'GRPH', 'FYN', 'ROOTS', 'DNT', 'WAVES', 'LTC', 'PRO', 'POE', 'ETC', 'DCN', 'TKN', 'LRC', 'HRB', 'CDT', 'DGB', 'SNT', 'DLT', 'CAT', 'FYP', 'BTC', 'RKC', 'DICE', 'SNM', 'MRV', 'ZRC', 'TAAS', 'STRAT', 'CSNO', 'XLC', 'XDN', 'ORME', 'BCN', 'TFL'
         ],
-        maxTradesAge: 60,
-        maxHistoryFetch: null,
         markets: [
             { pair: ['ETH', 'CFI'], minimalOrder: { amount: 0.01, unit: 'currency' } },
             { pair: ['BTC', 'CFI'], minimalOrder: { amount: 0.001, unit: 'currency' } },
@@ -577,7 +573,8 @@ Trader.getCapabilities = function () {
             { pair: ['BTC', 'DLT'], minimalOrder: { amount: 0.001, unit: 'currency' } }
         ],
         requires: ['key', 'secret'],
-        fetchTimeSpan: 60,
+        providesHistory: 'date',
+        providesFullHistory: true,
         tid: 'tid',
         tradable: true
     };
