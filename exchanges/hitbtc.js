@@ -7,7 +7,6 @@ var util = require('../core/util');
 var Trader = function(config) {
     _.bindAll(this);
     if (_.isObject(config)) {
-        console.log("config: ", config);
         this.key = config.key;
         this.secret = config.secret;
         this.asset = config.asset.toLowerCase();
@@ -15,7 +14,7 @@ var Trader = function(config) {
     }
     this.name = 'HitBTC';
     this.pair = this.asset + this.currency;
-    this.hitbtc = new HitBTC.default(this.key, this.secret, {isDemo: false});
+    this.hitbtc = new HitBTC.default({key: this.key, secret: this.secret, isDemo: false});
 }
 
 // If an error is received, method waits for 10 seconds before trying again
@@ -43,24 +42,87 @@ Trader.prototype.getPortfolio = function(callback) {
     var args = _.toArray(arguments);
 
     var set = function(balance) {
-        console.log("getPortfolio balance: ", balance);
         var portfolio = [];
+        _.each(balance.balance, function(amount, asset) {
+
+            portfolio.push({name: asset, amount: parseFloat((amount.cash))});
+        });
+        console.log("portfolio: ", portfolio);
 
         callback(null, portfolio);
     }.bind(this);
 
     this.hitbtc.getMyBalance()
-        .then(set);
+        .then(set)
+        .catch(function(err) {
+            console.log("hitbtc getPortfolio error: ", err);
+        });
 }
 
 Trader.prototype.getTicker = function(callback) {
 
-    console.log("ticker pair: ", this.pair);
     this.hitbtc.getTicker(this.pair)
         .then(function(data) {
-            console.log("getTicker data: ", data);
+            console.log("hitbtc getTicker data: ", data);
             callback(null, data);
+        })
+        .catch(function(err) {
+            console.log("hitbtc error: ", err);
         });
+}
+
+Trader.prototype.getFee = function(callback) {
+    callback(false, 0.001);
+}
+
+Trader.prototype.buy = function(amount, price, callback) {
+    var args = _.toArray(arguments);
+
+    var process = function(result) {
+        console.log("hitbtc buy result: ", result);
+
+        // callback(null, );
+    }.bind(this);
+
+    //Decrease amount by 1% to avoid trying to buy more than balance allows.
+    amount -= amount / 100;
+
+    amount *= 100000000;
+    amount = Math.floor(amount);
+    amount /= 100000000;
+
+    // prevent:
+    // 'Ensure that there are no more than 2 decimal places.'
+    price *= 100;
+    price = Math.floor(price);
+    price /= 100;
+
+    var params = {
+        symbol: this.pair,
+        side: buy,
+        price: price,
+        quantity: amount,
+        type: market
+    };
+
+    this.hitbtc.placeOrder(params)
+        .then(process);
+}
+
+Trader.prototype.sell = function(amount, price, callback) {
+
+}
+
+Trader.prototype.getOrder = function(id, callback) {
+
+}
+
+Trader.prototype.checkOrder = function(order, callback) {
+
+}
+
+Trader.prototype.cancelOrder = function (order, callback) {
+
 }
 
 Trader.prototype.getTrades = function(since, callback, descending) {
@@ -79,13 +141,14 @@ Trader.prototype.getTrades = function(since, callback, descending) {
             }
         });
 
-        console.log("getTrades trades: ", trades);
+        // console.log("getTrades trades: ", trades);
         callback(null, trades);
     }.bind(this);
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
         .then(process)
         .catch(function(err) {
+            console.log("hitbtc recentTrades error: ", err);
             if(err)
               return this.retry(this.getTrades, args);
         });
@@ -203,7 +266,7 @@ Trader.getCapabilities = function () {
 
             { pair: ['EUR', 'LSK'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['BTC', 'LSK'], minimalOrder: { amount: 0.01, unit: 'currency' } },
-            
+
             { pair: ['BTC', 'TIME'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['ETH', 'TIME'], minimalOrder: { amount: 0.01, unit: 'currency' } },
 
@@ -267,13 +330,13 @@ Trader.getCapabilities = function () {
             { pair: ['BTC', 'REP'], minimalOrder: { amount: 0.001, unit: 'currency' } },
 
             { pair: ['BTC', 'QCN'], minimalOrder: { amount: 0.01, unit: 'currency' } },
-,
+
             { pair: ['ETH', 'ECAT'], minimalOrder: { amount: 0.01, unit: 'currency' } },
 
             { pair: ['BTC', 'XTZ'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['USD', 'XTZ'], minimalOrder: { amount: 0.01, unit: 'currency' } },
             { pair: ['ETH', 'XTZ'], minimalOrder: { amount: 0.01, unit: 'currency' } },
-,
+
             { pair: ['BTC', 'PTOY'], minimalOrder: { amount: 0.001, unit: 'currency' } },
             { pair: ['ETH', 'PTOY'], minimalOrder: { amount: 0.01, unit: 'currency' } },
 
