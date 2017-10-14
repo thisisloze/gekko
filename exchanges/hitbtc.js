@@ -67,6 +67,7 @@ Trader.prototype.getTicker = function(callback) {
         })
         .catch(function(err) {
             console.log("hitbtc error: ", err);
+            callback(err, null);
         });
 }
 
@@ -79,8 +80,9 @@ Trader.prototype.buy = function(amount, price, callback) {
 
     var process = function(result) {
         console.log("hitbtc buy result: ", result);
+        result = result.ExecutionReport;
 
-        // callback(null, );
+        callback(null, result.orderId);
     }.bind(this);
 
     //Decrease amount by 1% to avoid trying to buy more than balance allows.
@@ -98,18 +100,55 @@ Trader.prototype.buy = function(amount, price, callback) {
 
     var params = {
         symbol: this.pair,
-        side: buy,
+        side: 'buy',
         price: price,
         quantity: amount,
-        type: market
+        type: 'market'
     };
 
+    console.log("hitbtc buy order: ", params);
     this.hitbtc.placeOrder(params)
-        .then(process);
+        .then(process)
+        .catch(function(err) {
+            log.error("hitbtc buy error: ", err);
+        });
 }
 
 Trader.prototype.sell = function(amount, price, callback) {
+    var args = _.toArray(arguments);
+    var process = function(result) {
+        console.log("hitbtc sell result: ", result);
+        result = result.ExecutionReport;
 
+        callback(null, result.orderId);
+    }.bind(this);
+
+    // prevent:
+    // 'Ensure that there are no more than 8 decimal places.'
+    amount *= 100000000;
+    amount = Math.floor(amount);
+    amount /= 100000000;
+
+    // prevent:
+    // 'Ensure that there are no more than 2 decimal places.'
+    price *= 100;
+    price = Math.ceil(price);
+    price /= 100;
+
+    var params = {
+        symbol: this.pair,
+        side: 'sell',
+        price: price,
+        quantity: amount,
+        type: 'market'
+    };
+
+    console.log("hitbtc sell order: ", params);
+    this.hitbtc.placeOrder(params)
+        .then(process)
+        .catch(function(err) {
+            log.error("hitbtc sell error: ", err);
+        });
 }
 
 Trader.prototype.getOrder = function(id, callback) {
