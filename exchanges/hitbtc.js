@@ -130,7 +130,6 @@ Trader.prototype.getTrades = function(since, callback, descending) {
     var args = _.toArray(arguments);
 
     var firstFetch = !!since;
-    console.log("kakkaa pyllyyn");
 
     var process = function(data) {
 
@@ -155,14 +154,14 @@ Trader.prototype.getTrades = function(since, callback, descending) {
     //     this.startIndex += 1000
     // }
 
-    var params = {
-        from: range.from.unix(),
-        // till: range.to.unix(),
-        by: 'ts',
-        start_index: this.startIndex,
-        max_results: 1000,
-        format_item: 'object'
-    };
+    // var params = {
+    //     from: range.from.unix(),
+    //     // till: range.to.unix(),
+    //     by: 'ts',
+    //     start_index: this.startIndex,
+    //     max_results: 1000,
+    //     format_item: 'object'
+    // };
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
         .then(process)

@@ -19,16 +19,16 @@ var overlapSize = 10; // 10 minutes
 // }
 
 // Get trades
-Fetcher.prototype.getTrades = function(range, callback) {
+Fetcher.prototype.getTrades = function(next, callback) {
     var args = _.toArray(arguments);
     var process = function(result) {
 
-        // console.log("hitbtc fetch result: ", result);
+        console.log("hitbtc fetch result: ", result);
 
         trades = _.map(result.trades, function(trade) {
           return {
               tid: trade.tid,
-              date: moment.utc(trade.date).unix(),
+              date: moment.utc(trade.date).format('X'),
               price: +trade.price,
               amount: +trade.amount
           };
@@ -38,13 +38,14 @@ Fetcher.prototype.getTrades = function(range, callback) {
     }.bind(this);
 
     var symbol = this.pair;
-    console.log("range: ", range);
+    // console.log("iterator: ", iterator);
     console.log("hitbtc importer symbol: ", symbol);
+
     var params = {
-        from: range.from.unix(),
-        till: range.to.unix(),
+        from: next.valueOf(),   // this has to be in millisecond to get it right
+        // till: range.to.unix(),
         by: 'ts',
-        start_index: this.startIndex,
+        start_index: 0,
         max_results: 1000,
         format_item: 'object'
     };
@@ -61,68 +62,78 @@ Fetcher.prototype.getTrades = function(range, callback) {
 
 util.makeEventEmitter(Fetcher);
 
-var iterator = false;
+// var iterator = false;
+var from = false;
 var end = false;
 var done = false;
+
+var lastId = false;
+var prevLastId = false;
+
+var nextTimestamp;
+
 
 var fetcher = new Fetcher(config.watch);
 
 var fetch = () => {
-    log.info(
-        config.watch.currency,
-        config.watch.asset,
-        'Requesting data from',
-        iterator.from.format('YYYY-MM-DD HH:mm:ss') + ',',
-        'to',
-        iterator.to.format('YYYY-MM-DD HH:mm:ss')
-    );
+    fetcher.import = true;
+    // log.info(
+    //     config.watch.currency,
+    //     config.watch.asset,
+    //     'Requesting data from',
+    //     iterator.from.format('YYYY-MM-DD HH:mm:ss') + ',',
+    //     'to',
+    //     iterator.to.format('YYYY-MM-DD HH:mm:ss')
+    // );
+    //
+    // if (util.gekkoEnv === 'child-process') {
+    //     let msg = ['Requesting data from',
+    //     iterator.from.format('YYYY-MM-DD HH:mm:ss') + ',',
+    //     'to',
+    //     iterator.to.format('YYYY-MM-DD HH:mm:ss')].join('');
+    //   process.send({type: 'log', log: msg});
+    // }
 
-    if (util.gekkoEnv === 'child-process') {
-        let msg = ['Requesting data from',
-        iterator.from.format('YYYY-MM-DD HH:mm:ss') + ',',
-        'to',
-        iterator.to.format('YYYY-MM-DD HH:mm:ss')].join('');
-      process.send({type: 'log', log: msg});
+
+    if (nextTimestamp) {
+        fetcher.getTrades(nextTimestamp, handleFetch);
+    } else {
+        console.log("firstFetch!");
+        // lastTimestamp = iterator.from.unix;
+        // iterator.lastIndex += 1000;
+        fetcher.getTrades(from, handleFetch);
     }
-    fetcher.getTrades(iterator, handleFetch);
 }
 
 var handleFetch = trades => {
 
-    console.log("hitbtc handleFetch trades: ", trades);
+    console.log("trades: ", trades);
 
-    iterator.from.add(batchSize, 'minutes').subtract(overlapSize, 'minutes');
-    iterator.to.add(batchSize, 'minutes').subtract(overlapSize, 'minutes');
+    var last = moment.unix(_.first(trades).date);
+    lastId = _.first(trades).tid;
 
-    if(!_.size(trades)) {
-      // fix https://github.com/askmike/gekko/issues/952
-      if(iterator.to.clone().add(batchSize * 4, 'minutes') > end) {
+    if (last < from) {
+        log.debug("Skipping data, they are before from date", last.format());
+        return fetch();
+    }
+
+    if (last > end || lastId === prevLastId) {
         fetcher.emit('done');
-      }
 
-      return fetcher.emit('trades', []);
+        var endUnix = end.unix();
+        trades = _.filter(
+            trades,
+            t => t.date <= endUnix
+        )
     }
-
-    var last = moment.unix(_.last(trades).date);
-
-    if(last > end) {
-      fetcher.emit('done');
-
-      var endUnix = end.unix();
-      trades = _.filter(
-        trades,
-        t => t.date <= endUnix
-      );
-    }
-
+    prevLastId = lastId;
     fetcher.emit('trades', trades);
+
 }
 
 module.exports = function (daterange) {
-  iterator = {
-    from: daterange.from.clone(),
-    to: daterange.from.clone().add(batchSize, 'minutes')
-  }
+
+  from = daterange.from.clone();
   end = daterange.to.clone();
 
   return {
