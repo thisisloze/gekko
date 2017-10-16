@@ -12,6 +12,7 @@ var Trader = function(config) {
         this.asset = config.asset.toLowerCase();
         this.currency = config.currency.toLowerCase();
     }
+    this.startIndex = 0;
     this.name = 'HitBTC';
     this.pair = this.asset + this.currency;
     this.hitbtc = new HitBTC.default({key: this.key, secret: this.secret, isDemo: false});
@@ -48,6 +49,7 @@ Trader.prototype.getPortfolio = function(callback) {
             portfolio.push({name: asset, amount: parseFloat((amount.cash))});
         });
 
+        console.log("hitbtc portfolio: ", portfolio);
         callback(null, portfolio);
     }.bind(this);
 
@@ -67,7 +69,6 @@ Trader.prototype.getTicker = function(callback) {
         })
         .catch(function(err) {
             console.log("hitbtc error: ", err);
-            callback(err, null);
         });
 }
 
@@ -80,9 +81,8 @@ Trader.prototype.buy = function(amount, price, callback) {
 
     var process = function(result) {
         console.log("hitbtc buy result: ", result);
-        result = result.ExecutionReport;
 
-        callback(null, result.orderId);
+        // callback(null, );
     }.bind(this);
 
     //Decrease amount by 1% to avoid trying to buy more than balance allows.
@@ -100,55 +100,18 @@ Trader.prototype.buy = function(amount, price, callback) {
 
     var params = {
         symbol: this.pair,
-        side: 'buy',
+        side: buy,
         price: price,
         quantity: amount,
-        type: 'market'
+        type: market
     };
 
-    console.log("hitbtc buy order: ", params);
     this.hitbtc.placeOrder(params)
-        .then(process)
-        .catch(function(err) {
-            log.error("hitbtc buy error: ", err);
-        });
+        .then(process);
 }
 
 Trader.prototype.sell = function(amount, price, callback) {
-    var args = _.toArray(arguments);
-    var process = function(result) {
-        console.log("hitbtc sell result: ", result);
-        result = result.ExecutionReport;
-
-        callback(null, result.orderId);
-    }.bind(this);
-
-    // prevent:
-    // 'Ensure that there are no more than 8 decimal places.'
-    amount *= 100000000;
-    amount = Math.floor(amount);
-    amount /= 100000000;
-
-    // prevent:
-    // 'Ensure that there are no more than 2 decimal places.'
-    price *= 100;
-    price = Math.ceil(price);
-    price /= 100;
-
-    var params = {
-        symbol: this.pair,
-        side: 'sell',
-        price: price,
-        quantity: amount,
-        type: 'market'
-    };
-
-    console.log("hitbtc sell order: ", params);
-    this.hitbtc.placeOrder(params)
-        .then(process)
-        .catch(function(err) {
-            log.error("hitbtc sell error: ", err);
-        });
+    console.log("hitbtc sell");
 }
 
 Trader.prototype.getOrder = function(id, callback) {
@@ -166,7 +129,8 @@ Trader.prototype.cancelOrder = function (order, callback) {
 Trader.prototype.getTrades = function(since, callback, descending) {
     var args = _.toArray(arguments);
 
-    var symbol = this.pair;
+    var firstFetch = !!since;
+    console.log("kakkaa pyllyyn");
 
     var process = function(data) {
 
@@ -181,6 +145,24 @@ Trader.prototype.getTrades = function(since, callback, descending) {
 
         callback(null, trades.reverse());
     }.bind(this);
+
+
+    console.log("since: ", since);
+    // console.log("time now: ", new Date());
+
+    var symbol = this.pair;
+    // if (since) {
+    //     this.startIndex += 1000
+    // }
+
+    var params = {
+        from: range.from.unix(),
+        // till: range.to.unix(),
+        by: 'ts',
+        start_index: this.startIndex,
+        max_results: 1000,
+        format_item: 'object'
+    };
 
     this.hitbtc.getRecentTrades(symbol, {max_results: 1000, format_item: 'object'})
         .then(process)
