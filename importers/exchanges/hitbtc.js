@@ -26,14 +26,11 @@ Fetcher.prototype.getTrades = function(next, callback) {
           };
         });
 
-        console.log("hitbtc fetch trades: ", result);
-        console.log("trades.length: ", result.length)
         callback(result.reverse());
     }.bind(this);
 
     var symbol = this.pair;
     // console.log("iterator: ", iterator);
-    console.log("hitbtc importer symbol: ", symbol);
 
     var params = {
         from: next.valueOf(),   // this has to be in millisecond to get it right
@@ -66,10 +63,13 @@ var prevLastId = false;
 
 var nextTimestamp;
 
-
+console.log("hitbtc importer config.watch: ", config.watch);
 var fetcher = new Fetcher(config.watch);
 
 var fetch = () => {
+
+fetcher.import = true;
+
     // log.info(
     //     config.watch.currency,
     //     config.watch.asset,
@@ -91,9 +91,9 @@ var fetch = () => {
     if (nextTimestamp) {
         setTimeout(() => {
             fetcher.getTrades(nextTimestamp, handleFetch);
-        }, 500);
+        }, 2000);
     } else {
-        console.log("firstFetch!");
+        //console.log("firstFetch!");
         // lastTimestamp = iterator.from.unix;
         // iterator.lastIndex += 1000;
         fetcher.getTrades(from, handleFetch);
@@ -103,12 +103,15 @@ var fetch = () => {
 var handleFetch = trades => {
 
     // console.log("trades: ", trades);
-
-    var last = moment.unix(_.first(trades).date);
-    console.log("LAST: ", last);
-    lastId = _.first(trades).tid;
-    console.log("LAST ID: ", lastId);
-    console.log("PREVIOUS ID: ", prevLastId);
+    if (trades.length) {
+        var last = moment.unix(_.first(trades).date);
+        //console.log("LAST: ", last);
+        lastId = _.first(trades).tid;
+        //console.log("LAST ID: ", lastId);
+        //console.log("PREVIOUS ID: ", prevLastId);
+    } else {
+        fetcher.emit('done');
+    }
 
     if (last < from) {
         console.log("Skipping...");
@@ -118,7 +121,9 @@ var handleFetch = trades => {
 
     if (last > end || lastId === prevLastId) {
 
-        console.log("DOOOOONE");
+        fetcher.emit('done');
+
+        //console.log("DOOOOONE");
 
         var endUnix = end.unix();
         trades = _.filter(
@@ -126,9 +131,8 @@ var handleFetch = trades => {
             t => t.date <= endUnix
         )
 
-        console.log("finishing trades: ", trades);
+        //console.log("finishing trades: ", trades);
 
-        fetcher.emit('done');
     }
     prevLastId = lastId;
     nextTimestamp = last;
