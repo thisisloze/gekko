@@ -10,31 +10,25 @@ var dirs = util.dirs();
 
 var Fetcher = require(dirs.exchanges + 'hitbtc');
 
-var batchSize = 60 * 2; // 2 hours
-var overlapSize = 10; // 10 minutes
-
-// Helper methods
-// function joinCurrencies(a, b) {
-//     return a + b;
-// }
 
 // Get trades
 Fetcher.prototype.getTrades = function(next, callback) {
     var args = _.toArray(arguments);
     var process = function(result) {
 
-        console.log("hitbtc fetch result: ", result);
 
-        trades = _.map(result.trades, function(trade) {
+        result = _.map(result.trades, function(trade) {
           return {
               tid: trade.tid,
-              date: moment.utc(trade.date).format('X'),
+              date: moment.utc(trade.date).unix(),
               price: +trade.price,
               amount: +trade.amount
           };
         });
 
-        callback(trades.reverse());
+        console.log("hitbtc fetch trades: ", result);
+        console.log("trades.length: ", result.length)
+        callback(result.reverse());
     }.bind(this);
 
     var symbol = this.pair;
@@ -76,7 +70,6 @@ var nextTimestamp;
 var fetcher = new Fetcher(config.watch);
 
 var fetch = () => {
-    fetcher.import = true;
     // log.info(
     //     config.watch.currency,
     //     config.watch.asset,
@@ -96,7 +89,9 @@ var fetch = () => {
 
 
     if (nextTimestamp) {
-        fetcher.getTrades(nextTimestamp, handleFetch);
+        setTimeout(() => {
+            fetcher.getTrades(nextTimestamp, handleFetch);
+        }, 500);
     } else {
         console.log("firstFetch!");
         // lastTimestamp = iterator.from.unix;
@@ -107,26 +102,36 @@ var fetch = () => {
 
 var handleFetch = trades => {
 
-    console.log("trades: ", trades);
+    // console.log("trades: ", trades);
 
     var last = moment.unix(_.first(trades).date);
+    console.log("LAST: ", last);
     lastId = _.first(trades).tid;
+    console.log("LAST ID: ", lastId);
+    console.log("PREVIOUS ID: ", prevLastId);
 
     if (last < from) {
+        console.log("Skipping...");
         log.debug("Skipping data, they are before from date", last.format());
         return fetch();
     }
 
     if (last > end || lastId === prevLastId) {
-        fetcher.emit('done');
+
+        console.log("DOOOOONE");
 
         var endUnix = end.unix();
         trades = _.filter(
             trades,
             t => t.date <= endUnix
         )
+
+        console.log("finishing trades: ", trades);
+
+        fetcher.emit('done');
     }
     prevLastId = lastId;
+    nextTimestamp = last;
     fetcher.emit('trades', trades);
 
 }
