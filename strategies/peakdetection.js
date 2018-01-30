@@ -25,17 +25,22 @@ strat.init = function() {
       direction: 'none',
       duration: 0,
       persisted: false,
+      wasLastPersisted: false,
       adviced: false
     };
 
     this.uptrendStat = {
         avgDur: 0,
-        duration: 0
+        duration: 0,
+        maxDuration: 0,
+        minDuration: 1
     };
 
     this.downtrendStat = {
         avgDur: 0,
-        duration: 0
+        duration: 0,
+        maxDuration: 0,
+        minDuration: 1
     };
 
     console.log('peakdetection - settings: ', this.settings);
@@ -54,20 +59,7 @@ strat.update = function(candle) {
 
 // For debugging purposes.
 strat.log = function() {
-    var signal = this.indicators.zsignal.result;
-    // var notZero = signal != 0 && undefined;
-    // if (notZero) {
-        log.debug('##### Smoothed Z-score #####');
-        log.debug('\tsignal: ', signal);
-        log.debug("\ttrend direction: ", this.trend.direction);
-        log.debug("\ttrend duration: ", this.trend.duration);
-        log.debug('\taverage up duration: ', this.uptrendStat.avgDur);
-        log.debug('\taverage down duration: ', this.downtrendStat.avgDur);
-        log.debug('############################\n\n');
 
-        // log.debug("\ttrend persisted: ", this.trend.persisted);
-        // log.debug('############################\n\n');
-    // }
 }
 
 // Based on the newly calculated
@@ -76,6 +68,7 @@ strat.log = function() {
 strat.check = function() {
 
     var zsignal = this.indicators.zsignal;
+    var lastDir = this.trend.direction;
 
     if (zsignal.result == -1) {
 
@@ -83,28 +76,38 @@ strat.check = function() {
 
         if (this.trend.direction !== 'down') {
 
-            var lastDir = this.trend.direction;
+            // var lastDir = this.trend.direction;
+            var wasPersisted = this.trend.persisted;
             this.trend = {
               duration: 0,
               persisted: false,
+              wasLastPersisted: wasPersisted,
               direction: 'down',
-              lastDirection: lastDir,
+              // lastDirection: lastDir,
               adviced: false
             };
         }
+        this.trend.lastDirection = lastDir;
 
         this.trend.duration++;
         this.downtrendStat.duration = this.trend.duration;
 
+        if (this.downtrendStat.duration > this.downtrendStat.maxDuration)
+            this.downtrendStat.maxDuration = this.downtrendStat.duration;
+
+
         this.trend.persisted = this.trend.duration > 1;
+        // var diff = this.downtrendStat.maxDuration - this.downtrendStat.avgDur;
+        // log.debug("\tdiff: ", diff);
+        // this.trend.persisted = this.trend.duration >= diff && diff > 1;
 
-        if (this.trend.persisted && !this.trend.adviced /*&& this.trend.duration >= this.downtrendStat.avgDur*/) {
-            this.trend.adviced = true;
-            console.log('\n\tBuy signal received.\n');
-            this.advice('long');
-        }
+        // if (this.trend.persisted && !this.trend.adviced /*&& this.trend.duration >= this.downtrendStat.avgDur*/) {
+        //     this.trend.adviced = true;
+        //     console.log('\n\tBuy signal received.\n');
+        //     this.advice('long');
+        // }
 
-        this.advice();
+        // this.advice();
 
     } else if (zsignal.result == 1) {
 
@@ -112,63 +115,109 @@ strat.check = function() {
 
         if (this.trend.direction !== 'up') {
 
-            // Calculate average duration for down trend.
-            this.downtrendStat.avgDur = (math.abs(this.downtrendStat.avgDur + this.downtrendStat.duration)) / 2;
-
-            var lastDir = this.trend.direction;
+            // var lastDir = this.trend.direction;
+            var wasPersisted = this.trend.persisted;
             this.trend = {
               duration: 0,
               persisted: false,
+              wasLastPersisted: wasPersisted,
               direction: 'up',
-              lastDirection: lastDir,
+              // lastDirection: lastDir,
               adviced: false
             };
         }
+        this.trend.lastDirection = lastDir;
 
-                this.trend.duration++;
-                this.uptrendStat.duration = this.trend.duration;
+        this.trend.duration++;
+        this.uptrendStat.duration = this.trend.duration;
+
+        if (this.uptrendStat.duration > this.uptrendStat.maxDuration)
+            this.uptrendStat.maxDuration = this.uptrendStat.duration;
 
         this.trend.persisted = this.trend.duration > 1;
+        // var diff = this.uptrendStat.maxDuration - this.uptrendStat.avgDur;
+        // log.debug("\tdiff: ", diff);
+        // this.trend.persisted = this.trend.duration >= diff && diff > 1;
 
-        if (this.trend.persisted && !this.trend.adviced /*&& this.trend.duration >= this.uptrendStat.avgDur*/) {
-            this.trend.adviced = true;
-            console.log('\n\tSell signal received.\n');
-            this.advice('short');
-        }
+        // if (this.trend.persisted && !this.trend.adviced /*&& this.trend.duration >= this.uptrendStat.avgDur*/) {
+        //     this.trend.adviced = true;
+        //     console.log('\n\tSell signal received.\n');
+        //     this.advice('short');
+        // }
 
-        this.advice();
+        // this.advice();
     } else {
 
+        if (this.trend.direction !== 'none') {
+            // var lastDir = this.trend.direction;
+            var wasPersisted = this.trend.persisted;
 
-        var lastDir = this.trend.direction;
-        this.trend = {
-          duration: 0,
-          persisted: false,
-          direction: 'none',
-          lastDirection: lastDir,
-          adviced: false
-        };
+            this.trend = {
+              duration: 0,
+              persisted: false,
+              wasLastPersisted: wasPersisted,
+              direction: 'none',
+              // lastDirection: lastDir,
+              adviced: false
+            };
+        }
+        this.trend.lastDirection = lastDir;
 
-        this.advice();
+        // this.advice();
     }
 
 
-    // console.log('current trend: ', this.trend.direction, ' last trend: ', this.trend.lastDirection);
     if (this.trend.direction !== this.trend.lastDirection) {
         if (this.trend.lastDirection == 'up') {
-            console.log('Updated up trend strat.\n');
+            // console.log('Updated up trend strat.\n');
             this.uptrendStat.avgDur = (this.uptrendStat.avgDur + this.uptrendStat.duration) / 2;
             this.uptrendStat.duration = 0;
         } else if (this.trend.lastDirection == 'down') {
-            console.log('Updated down trend strat.\n');
+            // console.log('Updated down trend strat.\n');
             this.downtrendStat.avgDur = (this.downtrendStat.avgDur + this.downtrendStat.duration) / 2;
             this.downtrendStat.duration = 0;
         }
     }
 
 
-    // Update lastDirection
-    // this.trend.lastDirection = this.trend.direction;
+    // log.debug('##### Smoothed Z-score #####');
+
+    // Detect possible trade
+    if (this.trend.direction === 'none') {
+
+        if (this.trend.lastDirection === 'down' && this.trend.wasLastPersisted && !this.trend.adviced) {
+
+            this.trend.adviced = true;
+            console.log('\t\nBuy signal received.\n');
+            this.advice('long');
+        } else if (this.trend.lastDirection == 'up' && this.trend.wasLastPersisted && !this.trend.adviced) {
+
+            this.trend.adviced = true;
+            console.log('\t\nSell signal received.\n');
+            this.advice('short');
+        }
+    } else {
+
+        // console.log('\t\tPIERU');
+        this.advice();
+    }
+
+    // log.debug('\tsignal: ', zsignal.result);
+    // log.debug("\ttrend direction: ", this.trend.direction);
+    // log.debug("\tlast direction: ", this.trend.lastDirection);
+    // log.debug("\tpersisted: ", this.trend.persisted);
+    // log.debug("\twas persisted: ", this.trend.wasLastPersisted);
+    // log.debug("\ttrend duration: ", this.trend.duration);
+    // log.debug('\taverage up duration: ', this.uptrendStat.avgDur);
+    // log.debug('\tmax up duration: ', this.uptrendStat.maxDuration);
+    // log.debug('\taverage down duration: ', this.downtrendStat.avgDur);
+    // log.debug('\tmax down duration: ', this.downtrendStat.maxDuration);
+    // log.debug('############################\n\n');
+
+
+
+
+
 }
 
 module.exports = strat;
