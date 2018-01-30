@@ -180,6 +180,13 @@ config['talib-macd'] = {
   }
 }
 
+// peakdetection
+config.peakdetection = {
+    lag: 15,
+    threshold: 3.5,
+    influence: 0.5,
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                       CONFIGURING PLUGINS
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
