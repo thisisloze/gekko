@@ -24,6 +24,7 @@ config.watch = {
   // If you don't set it, the defaults are 2 sec for
   // okcoin and 20 sec for all other exchanges.
   // tickrate: 20
+  tickrate: 1
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,9 +33,9 @@ config.watch = {
 
 config.tradingAdvisor = {
   enabled: true,
-  method: 'n2',
+  method: 'peakdetection',
   candleSize: 1,
-  historySize: 1000,
+  historySize: 100,
   adapter: 'sqlite'
 }
 
@@ -178,6 +179,13 @@ config['talib-macd'] = {
     down: -0.025,
     up: 0.025,
   }
+}
+
+// peakdetection
+config.peakdetection = {
+    lag: 15,
+    threshold: 3.5,
+    influence: 0.5,
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
