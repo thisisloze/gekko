@@ -65,7 +65,8 @@ strat.check = function() {
             direction: 'up',
             adviced: false
           };
-        this.trend.duration++;
+        //this.trend.duration++;
+        //this.trend.persisted = this.trend.duration > 1;
 
         log.debug('>>>>>> Up trend properties:');
         log.debug('\txClose: ', this.xclose);
@@ -86,7 +87,8 @@ strat.check = function() {
             direction: 'down',
             adviced: false
           };
-        this.trend.duration++;
+        //this.trend.duration++;
+        //this.trend.persisted = this.trend.duration > 0;
 
         log.debug('<<<<<<< Down trend properties:');
         log.debug('\txClose: ', this.xclose);
@@ -95,19 +97,20 @@ strat.check = function() {
         log.debug('\txLow: ', this.xlow);
         log.debug('\tDuration: ', this.trend.duration);
         log.debug('<<<<<<<<<<<<<<<<<<<<<<<<<\n');
-        
+
     } else {
 
         // New trend detected
-        if(this.trend.direction !== 'none')
-          // reset the state for the new trend
-          this.trend = {
-            duration: 0,
-            persisted: false,
-            direction: 'none',
-            adviced: false
-          };
-        this.trend.duration++;
+        //if(this.trend.direction !== 'none')
+        //  // reset the state for the new trend
+        //  this.trend = {
+        //    duration: 0,
+        //    persisted: false,
+        //    direction: 'none',
+        //    adviced: false
+        //  };
+        //this.trend.duration++;
+        //this.trend.persisted = this.trend.duration > 1;
 
         log.debug('======== Trend is ranging:');
         log.debug('\txClose: ', this.xclose);
@@ -116,6 +119,19 @@ strat.check = function() {
         log.debug('\txLow: ', this.xlow);
         log.debug('\tDuration: ', this.trend.duration);
         log.debug('====================\n');
+    }
+
+    // Give advice
+    if (this.trend.direction == 'up'/* && this.trend.persisted */&& !this.trend.adviced) {
+        log.debug('Buying signal received\n');
+        this.advice('long');
+        this.trend.adviced = true;
+    } else if (this.trend.direction == 'down' /*&& this.trend.persisted */&& !this.trend.adviced) {
+        log.debug('Selling signal received\n');
+        this.advice('short');
+        this.trend.adviced = true;
+    } else {
+        this.advice();
     }
 
 }
