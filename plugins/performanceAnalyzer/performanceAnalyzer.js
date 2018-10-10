@@ -36,7 +36,10 @@ const PerformanceAnalyzer = function() {
 
   this.sharpe = 0;
 
+  this.totalwins = 0;
+
   this.roundTrips = [];
+  this.totalExposure = [];
   this.roundTrip = {
     entry: false,
     exit: false
@@ -115,7 +118,10 @@ PerformanceAnalyzer.prototype.handleRoundtrip = function() {
   roundtrip.pnl = roundtrip.exitBalance - roundtrip.entryBalance;
   roundtrip.profit = (100 * roundtrip.exitBalance / roundtrip.entryBalance) - 100;
 
+  if (roundtrip.profit > 0) { this.totalwins++ } 
+
   this.roundTrips.push(roundtrip);
+  this.totalExposure.push(duration);
   this.handler.handleRoundtrip(roundtrip);
 
   // we need a cache for sharpe
@@ -132,6 +138,9 @@ PerformanceAnalyzer.prototype.calculateReportStatistics = function() {
   // the portfolio's balance is measured in {currency}
   let balance = this.current.currency + this.price * this.current.asset;
   let profit = balance - this.start.balance;
+  let wins = this.trades - this.totalwins;
+  let winRatio = wins / this.trades;
+  let maxExposure = this.totalExposure.reduce((a, b) => a + b, 0);
 
   let timespan = moment.duration(
     this.dates.end.diff(this.dates.start)
@@ -157,8 +166,12 @@ PerformanceAnalyzer.prototype.calculateReportStatistics = function() {
     startPrice: this.startPrice,
     endPrice: this.endPrice,
     trades: this.trades,
+    wins: wins,
+    losses: this.totalwins,
+    winRatio: winRatio,
     startBalance: this.start.balance,
-    sharpe: this.sharpe
+    sharpe: this.sharpe,
+    maxExposure: maxExposure
   }
 
   report.alpha = report.profit - report.market;
